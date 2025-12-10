@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(decision_maker VERSION 0.1.0 LANGUAGES CXX)
 
+# Name of the c++ class, used later to create the composable node
+set(PROJECT_NODE_CLASS "adore::DecisionMaker")
+
 # C++20 strict mode
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -66,18 +69,19 @@ set(CORE_SRC
 # -------------------------
 # Core OBJECT library
 # -------------------------
-add_library(decision_maker_core OBJECT
+set(PROJECT_CORE "${PROJECT_NAME}_core")
+add_library(${PROJECT_CORE} OBJECT
   ${CORE_SRC}
 )
-configure_target_common(decision_maker_core)
-ament_target_dependencies(decision_maker_core ${PROJECT_DEPS})
+configure_target_common(${PROJECT_CORE})
+ament_target_dependencies(${PROJECT_CORE} ${PROJECT_DEPS})
 
 # -------------------------
 # Executable node
 # -------------------------
 add_executable(${PROJECT_NAME}
   src/main.cpp
-  $<TARGET_OBJECTS:decision_maker_core>
+  $<TARGET_OBJECTS:${PROJECT_CORE}>
 )
 configure_target_common(${PROJECT_NAME})
 ament_target_dependencies(${PROJECT_NAME} ${PROJECT_DEPS})
@@ -95,15 +99,15 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/rules.yaml
 # Component library (without main)
 # -------------------------
 add_library(${PROJECT_NAME}_component SHARED
-  $<TARGET_OBJECTS:decision_maker_core>
+  $<TARGET_OBJECTS:${PROJECT_CORE}>
 )
 configure_target_common(${PROJECT_NAME}_component)
 ament_target_dependencies(${PROJECT_NAME}_component ${PROJECT_DEPS})
 target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 
 rclcpp_components_register_node(${PROJECT_NAME}_component
-  PLUGIN "adore::DecisionMaker"
-  EXECUTABLE decisionmaker
+  PLUGIN ${PROJECT_NODE_CLASS}
+  EXECUTABLE "${PROJECT_NAME}_composed"
 )
 
 install(TARGETS ${PROJECT_NAME}_component
