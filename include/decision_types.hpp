@@ -17,7 +17,7 @@
 #include "adore_dynamics_conversions.hpp"
 
 #include "dynamics/comfort_settings.hpp"
-#include "planning/trajectory_planner.hpp"
+#include "planning/trajectory_optimizer.hpp"
 
 namespace adore
 {
@@ -27,12 +27,13 @@ struct Decision
   std::optional<dynamics::Trajectory>         trajectory;
   std::optional<dynamics::TrafficParticipant> traffic_participant;
   std::optional<dynamics::Trajectory>         trajectory_suggestion;
+  std::optional<planner::DrivableArea>        drivable_area;
   std::optional<bool>                         assistance_request;
 };
 
 struct PlanningParams
 {
-  planner::TrajectoryPlanner                      planner;
+  planner::TrajectoryOptimizer                    trajectory_optimizer;
   std::shared_ptr<dynamics::PhysicalVehicleModel> vehicle_model;
   std::shared_ptr<dynamics::ComfortSettings>      comfort_settings;
   std::map<std::string, double>                   planner_settings;
@@ -45,7 +46,7 @@ struct ConditionParams
   // reference trajectory
   size_t min_ref_traj_size = 5;
   double max_ref_traj_age  = 1.0; // [s]
-  size_t min_route_length  = 20;  // [m]
+  size_t min_route_length  = 5;   // [m]
   double gps_sigma_ok      = 1.0; // [m]s
 };
 
@@ -77,6 +78,7 @@ struct OutTopics
   std::string trajectory_suggestion = "trajectory_suggestion";
   std::string assistance_request    = "assistance_request";
   std::string traffic_participant   = "traffic_participant";
+  std::string drivable_area         = "drivable_area";
 };
 
 struct DecisionParams
@@ -131,9 +133,9 @@ load_params( rclcpp::Node& node )
   planning_params.vehicle_model    = std::make_shared<dynamics::PhysicalVehicleModel>( vehicle_model_file, false );
   planning_params.comfort_settings = std::make_shared<dynamics::ComfortSettings>(); // default value comfort settings
 
-  planning_params.planner.set_vehicle_parameters( planning_params.vehicle_model->params );
-  planning_params.planner.set_comfort_settings( planning_params.comfort_settings );
-  planning_params.planner.set_parameters( planning_params.planner_settings );
+  planning_params.trajectory_optimizer.set_vehicle_parameters( planning_params.vehicle_model->params );
+  planning_params.trajectory_optimizer.set_comfort_settings( planning_params.comfort_settings );
+  planning_params.trajectory_optimizer.set_parameters( planning_params.planner_settings );
 
   planning_params.v2x_id = node.declare_parameter( "v2x_id", planning_params.v2x_id );
 

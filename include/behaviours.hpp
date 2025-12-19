@@ -20,7 +20,7 @@
 #include "decision_types.hpp"
 #include "domain.hpp"
 #include "dynamics/comfort_settings.hpp"
-#include "planning/trajectory_planner.hpp"
+#include "planning/trajectory_optimizer.hpp"
 
 namespace adore
 {

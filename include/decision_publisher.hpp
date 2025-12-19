@@ -13,10 +13,12 @@
 
 #pragma once
 #include "adore_dynamics_adapters.hpp"
+#include "adore_map_adapters.hpp"
 
 #include "behaviours.hpp"
 #include "conditions.hpp"
 #include "domain.hpp"
+#include "planning/drivable_area.hpp"
 #include "rules.hpp"
 #include <rclcpp/rclcpp.hpp>
 
@@ -29,7 +31,9 @@ struct DecisionPublisher
   rclcpp::Publisher<TrajectoryAdapter>::SharedPtr                       trajectory_suggestion_publisher;
   rclcpp::Publisher<adore_ros2_msgs::msg::AssistanceRequest>::SharedPtr assistance_publisher;
   rclcpp::Publisher<ParticipantAdapter>::SharedPtr                      traffic_participant_publisher;
-  void                                                                  setup( rclcpp::Node& node, const OutTopics& topics );
-  void                                                                  publish( const rclcpp::Node& node, const Decision& decision );
+  rclcpp::Publisher<DrivableAreaAdapter>::SharedPtr                     drivable_area_publisher;
+
+  void setup( rclcpp::Node& node, const OutTopics& topics );
+  void publish( const rclcpp::Node& node, const Decision& decision );
 };
 } // namespace adore

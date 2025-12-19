@@ -53,7 +53,7 @@ route_available( const Domain& d, const ConditionParams& p )
   if( !d.route || !d.vehicle_state )
     return false;
 
-  double remaining = d.route->get_length() - d.route->get_s( *d.vehicle_state );
+  double remaining = d.route->get_length() - d.route->get_s( *d.vehicle_state, 10.0 ).value_or( d.route->get_length() );
   return remaining > p.min_route_length;
 }
 

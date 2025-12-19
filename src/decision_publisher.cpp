@@ -24,11 +24,16 @@ DecisionPublisher::setup( rclcpp::Node& node, const OutTopics& topics )
   trajectory_suggestion_publisher = node.create_publisher<TrajectoryAdapter>( topics.trajectory_suggestion, 1 );
   assistance_publisher            = node.create_publisher<adore_ros2_msgs::msg::AssistanceRequest>( topics.assistance_request, 1 );
   traffic_participant_publisher   = node.create_publisher<ParticipantAdapter>( topics.traffic_participant, 1 );
+  drivable_area_publisher         = node.create_publisher<DrivableAreaAdapter>( topics.drivable_area, 1 );
 }
 
 void
 DecisionPublisher::publish( const rclcpp::Node& node, const Decision& decision )
 {
+  if( decision.drivable_area )
+  {
+    drivable_area_publisher->publish( *decision.drivable_area );
+  }
   if( decision.trajectory )
     trajectory_publisher->publish( *decision.trajectory );
 
