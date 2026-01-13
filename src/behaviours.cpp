@@ -14,9 +14,7 @@
 #include "behaviours.hpp"
 
 #include "planning/drivable_area.hpp"
-#include "planning/nominal_participant_prediction.hpp"
-#include "planning/planning_helpers.hpp" // your existing helpers
-#include "planning/speed_profile.hpp"
+#include "planning/common/planning_helpers.hpp" // your existing helpers
 
 namespace adore::behaviours
 {
@@ -70,98 +68,34 @@ follow_route( const Domain& domain, PlanningParams& planning_tools )
     fallback.label          = "Follow Route (Invalid Domain)";
     out.trajectory          = std::move( fallback );
     out.traffic_participant = make_default_participant( domain, planning_tools );
+    std::cerr << out.trajectory->label << std::endl;
+
     return out;
   }
 
-  const auto& route = *domain.route;
-  const auto& ego   = *domain.vehicle_state;
+  // Use the high-level MotionPlanner
+  auto result = planning_tools.motion_planner.plan( *domain.route, *domain.vehicle_state, domain.traffic_participants );
 
-  planner::DrivableAreaConfig da_cfg;
-  da_cfg.lane_scope             = planner::LaneScope::AllLanes;
-  da_cfg.lateral_inflation      = 0.2;
-  da_cfg.longitudinal_inflation = 1.5;
-
-  constexpr double drivable_area_length = 100.0;
-  constexpr double drivable_area_before = 10.0;
-
-  const double state_s    = route.get_s( ego, 10.0 ).value_or( 0.0 );
-  const double da_start_s = state_s - drivable_area_before;
-  const double da_end_s   = state_s + drivable_area_length;
-
-  // Predict all participants (local working copy).
-  planner::NominalParticipantPrediction participant_predictor;
-  auto                                  participants = domain.traffic_participants;
-  participant_predictor.plan_trajectories( participants );
-
-  out.drivable_area = planner::create_drivable_area( route, da_start_s, da_end_s, participants, da_cfg );
-
-  if( !out.drivable_area || out.drivable_area->empty() )
+  if( result.success && result.trajectory )
+  {
+    out.trajectory        = *result.trajectory;
+    out.trajectory->label = "Follow Route";
+  }
+  else
   {
     dynamics::Trajectory fallback;
-    fallback.adjust_start_time( ego.time );
-    fallback.label          = "Follow Route (No Drivable Area)";
-    out.trajectory          = std::move( fallback );
-    out.traffic_participant = make_default_participant( domain, planning_tools );
-    return out;
+    fallback.adjust_start_time( domain.vehicle_state->time );
+    fallback.label = "Follow Route (Planning Failed)";
+    if( !result.message.empty() )
+    {
+      fallback.label += ": " + result.message;
+    }
+    out.trajectory = std::move( fallback );
   }
 
-  // -----------------------------------------------------------------------------
-  // Speed profile
-  // -----------------------------------------------------------------------------
-  planner::SpeedProfile speed_profile;
+  std::cerr << out.trajectory->label << std::endl;
 
-  planner::SpeedProfileConfig sp_cfg;
-  sp_cfg.total_time        = 5.0;
-  sp_cfg.s_horizon         = 100.0;
-  sp_cfg.ds_dp             = 0.25;
-  sp_cfg.projection_window = 50.0;
-
-  sp_cfg.v_max = 13.6;
-  sp_cfg.a_min = -2.0;
-  sp_cfg.a_max = 2.0;
-  sp_cfg.j_max = 20.0;
-
-  sp_cfg.dt_qp = 0.1;
-  sp_cfg.dt_dp = 0.5;
-
-  sp_cfg.w_dp_progress = 1000.0;
-  sp_cfg.w_dp_speed    = 1.0;
-  sp_cfg.w_dp_accel    = 10.0;
-  sp_cfg.w_dp_jerk     = 10.0;
-  sp_cfg.w_dp_obstacle = 10.0;
-
-  sp_cfg.max_curvature = 0.1;
-
-  sp_cfg.w_qp_track_dp        = 0.01;
-  sp_cfg.w_qp_accel           = 1.0;
-  sp_cfg.w_qp_jerk            = 10.0;
-  sp_cfg.w_qp_v0              = 10.0;
-  sp_cfg.w_qp_a0              = 2.0;
-  sp_cfg.w_qp_limit_violation = 100.0;
-
-  speed_profile = planner::plan_speed_profile( *out.drivable_area, participants, ego, sp_cfg );
-
-  std::cerr << "Speed profile points: " << speed_profile.size() << std::endl;
-
-  // -----------------------------------------------------------------------------
-  // Reference + initial guess + optimize
-  // -----------------------------------------------------------------------------
-  const double dt            = 0.1;
-  const size_t horizon_steps = 40;
-
-  const dynamics::Trajectory ref_traj = planner::generate_reference_trajectory( speed_profile, out.drivable_area->reference_line, dt,
-                                                                                horizon_steps );
-
-  const dynamics::Trajectory guess_traj = planner::initial_guess_pure_pursuit( ref_traj, ego, *planning_tools.vehicle_model );
-
-  // dynamics::Trajectory traj = planning_tools.trajectory_optimizer.optimize_trajectory( ego, ref_traj, guess_traj );
-  dynamics::Trajectory traj = ref_traj;
-
-
-  traj.adjust_start_time( ego.time );
-  traj.label = "Follow Route";
-
-  out.trajectory          = std::move( traj );
+  out.drivable_area       = result.drivable_area;
   out.traffic_participant = make_default_participant( domain, planning_tools );
   return out;
 }

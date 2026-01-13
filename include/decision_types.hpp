@@ -19,6 +19,8 @@
 #include "dynamics/comfort_settings.hpp"
 #include "planning/trajectory_optimizer.hpp"
 
+#include "planning/motion_planner.hpp"
+
 namespace adore
 {
 
@@ -34,6 +36,7 @@ struct Decision
 struct PlanningParams
 {
   planner::TrajectoryOptimizer                    trajectory_optimizer;
+  planner::MotionPlanner                          motion_planner;
   std::shared_ptr<dynamics::PhysicalVehicleModel> vehicle_model;
   std::shared_ptr<dynamics::ComfortSettings>      comfort_settings;
   std::map<std::string, double>                   planner_settings;
@@ -136,6 +139,10 @@ load_params( rclcpp::Node& node )
   planning_params.trajectory_optimizer.set_vehicle_parameters( planning_params.vehicle_model->params );
   planning_params.trajectory_optimizer.set_comfort_settings( planning_params.comfort_settings );
   planning_params.trajectory_optimizer.set_parameters( planning_params.planner_settings );
+  
+  planner::MotionPlannerConfig mp_config = planning_params.motion_planner.config; // Use defaults from constructor
+  planning_params.motion_planner.init( mp_config, planning_params.vehicle_model->params, planning_params.comfort_settings );
+  planning_params.motion_planner.update_parameters( planning_params.planner_settings );
 
   planning_params.v2x_id = node.declare_parameter( "v2x_id", planning_params.v2x_id );
 
