@@ -17,9 +17,8 @@
 #include "adore_dynamics_conversions.hpp"
 
 #include "dynamics/comfort_settings.hpp"
-#include "planning/trajectory_optimizer.hpp"
-
 #include "planning/motion_planner.hpp"
+#include "planning/trajectory_optimizer.hpp"
 
 namespace adore
 {
@@ -47,9 +46,9 @@ struct PlanningParams
 struct ConditionParams
 {
   // reference trajectory
-  size_t min_ref_traj_size = 5;
+  size_t min_ref_traj_size = 3;
   double max_ref_traj_age  = 1.0; // [s]
-  size_t min_route_length  = 5;   // [m]
+  size_t min_route_length  = 3;   // [m]
   double gps_sigma_ok      = 1.0; // [m]s
 };
 
@@ -139,7 +138,7 @@ load_params( rclcpp::Node& node )
   planning_params.trajectory_optimizer.set_vehicle_parameters( planning_params.vehicle_model->params );
   planning_params.trajectory_optimizer.set_comfort_settings( planning_params.comfort_settings );
   planning_params.trajectory_optimizer.set_parameters( planning_params.planner_settings );
-  
+
   planner::MotionPlannerConfig mp_config = planning_params.motion_planner.config; // Use defaults from constructor
   planning_params.motion_planner.init( mp_config, planning_params.vehicle_model->params, planning_params.comfort_settings );
   planning_params.motion_planner.update_parameters( planning_params.planner_settings );

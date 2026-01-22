@@ -152,7 +152,7 @@ safety_corridor( const Domain& domain, PlanningParams& planning_tools )
   auto planned_trajectory = planner::waypoints_to_trajectory( *domain.vehicle_state, safety_waypoints, domain.traffic_participants,
                                                               *planning_tools.vehicle_model, target_speed );
 
-  planned_trajectory = planning_tools.trajectory_optimizer.optimize_trajectory( *domain.vehicle_state, planned_trajectory );
+  // planned_trajectory = planning_tools.trajectory_optimizer.optimize_trajectory( *domain.vehicle_state, planned_trajectory );
 
   planned_trajectory.label = "Safety Corridor";
   out.trajectory           = std::move( planned_trajectory );
@@ -183,7 +183,7 @@ minimum_risk( const Domain& domain, PlanningParams& planning_tools )
   auto   planned_trajectory = planner::waypoints_to_trajectory( *domain.vehicle_state, cut_route, domain.traffic_participants,
                                                                 *planning_tools.vehicle_model, 0.0 /* target_speed */ );
 
-  planned_trajectory = planning_tools.trajectory_optimizer.optimize_trajectory( *domain.vehicle_state, planned_trajectory );
+  // planned_trajectory = planning_tools.trajectory_optimizer.optimize_trajectory( *domain.vehicle_state, planned_trajectory );
   if( planned_trajectory.states.size() < 2 )
   {
     out = standstill( domain, planning_tools );
